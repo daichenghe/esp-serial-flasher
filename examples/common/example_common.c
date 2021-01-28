@@ -123,13 +123,14 @@ esp_loader_error_t flash_binary(const uint8_t *bin, size_t size, size_t address)
     esp_loader_error_t err;
     static uint8_t payload[1024];
     const uint8_t *bin_addr = bin;
-
+    printf("address = %x,size = %d",address,size);
     printf("Erasing flash (this may take a while)...\n");
     err = esp_loader_flash_start(address, size, sizeof(payload));
     if (err != ESP_LOADER_SUCCESS) {
         printf("Erasing flash failed with error %d.\n", err);
         return err;
     }
+    
     printf("Start programming\n");
 
     size_t binary_size = size;
