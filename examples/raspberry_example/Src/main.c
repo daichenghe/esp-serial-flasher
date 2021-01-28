@@ -21,7 +21,7 @@
 
 #define DEFAULT_BAUD_RATE 115200
 #define HIGHER_BAUD_RATE  460800
-#define SERIAL_DEVICE     "/dev/ttyS0"
+#define SERIAL_DEVICE     "/dev/ttyUSB0"
 
 #define BINARY_PATH       "../../binaries/ESP32_AT_Firmware/Firmware.bin"
 
