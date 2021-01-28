@@ -23,7 +23,7 @@
 #define HIGHER_BAUD_RATE  460800
 #define SERIAL_DEVICE     "/dev/ttyUSB0"
 
-#define BINARY_PATH       "../../binaries/ESP32_AT_Firmware/Firmware.bin"
+#define BINARY_PATH       "./Firmware.bin"
 
 #define BOOTLOADER_ADDRESS  0x1000
 #define PARTITION_ADDRESS   0x8000

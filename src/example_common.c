@@ -27,26 +27,26 @@
 #define PARTITION_ADDRESS   0x8000
 #define APPLICATION_ADDRESS 0x10000
 
-extern const uint8_t  ESP32_bootloader_bin[];
-extern const uint32_t ESP32_bootloader_bin_size;
-extern const uint8_t  ESP32_hello_world_bin[];
-extern const uint32_t ESP32_hello_world_bin_size;
-extern const uint8_t  ESP32_partition_table_bin[];
-extern const uint32_t ESP32_partition_table_bin_size;
+const uint8_t  ESP32_bootloader_bin[];
+const uint32_t ESP32_bootloader_bin_size;
+const uint8_t  ESP32_hello_world_bin[];
+const uint32_t ESP32_hello_world_bin_size;
+const uint8_t  ESP32_partition_table_bin[];
+const uint32_t ESP32_partition_table_bin_size;
 
-extern const uint8_t  ESP32_S2_bootloader_bin[];
-extern const uint32_t ESP32_S2_bootloader_bin_size;
-extern const uint8_t  ESP32_S2_hello_world_bin[];
-extern const uint32_t ESP32_S2_hello_world_bin_size;
-extern const uint8_t  ESP32_S2_partition_table_bin[];
-extern const uint32_t ESP32_S2_partition_table_bin_size;
+const uint8_t  ESP32_S2_bootloader_bin[];
+const uint32_t ESP32_S2_bootloader_bin_size;
+const uint8_t  ESP32_S2_hello_world_bin[];
+const uint32_t ESP32_S2_hello_world_bin_size;
+const uint8_t  ESP32_S2_partition_table_bin[];
+const uint32_t ESP32_S2_partition_table_bin_size;
 
-extern const uint8_t  ESP8266_bootloader_bin[];
-extern const uint32_t ESP8266_bootloader_bin_size;
-extern const uint8_t  ESP8266_hello_world_bin[];
-extern const uint32_t ESP8266_hello_world_bin_size;
-extern const uint8_t  ESP8266_partition_table_bin[];
-extern const uint32_t ESP8266_partition_table_bin_size;
+const uint8_t  ESP8266_bootloader_bin[];
+const uint32_t ESP8266_bootloader_bin_size;
+const uint8_t  ESP8266_hello_world_bin[];
+const uint32_t ESP8266_hello_world_bin_size;
+const uint8_t  ESP8266_partition_table_bin[];
+const uint32_t ESP8266_partition_table_bin_size;
 
 void get_example_binaries(target_chip_t target, example_binaries_t *bins)
 {
