@@ -21,10 +21,13 @@
 
 #define DEFAULT_BAUD_RATE 115200
 #define HIGHER_BAUD_RATE  460800
-#define SERIAL_DEVICE     "/dev/ttyS0"
+#define SERIAL_DEVICE     "/dev/ttyUSB0"
 
 #define BINARY_PATH       "../../binaries/ESP32_AT_Firmware/Firmware.bin"
 
+#define BOOTLOADER_ADDRESS  0x1000
+#define PARTITION_ADDRESS   0x8000
+#define APPLICATION_ADDRESS 0x10000
 
 static void upload_file(const char *path, size_t address)
 {
@@ -74,7 +77,7 @@ int main(void)
     loader_port_raspberry_init(&config);
 
     if (connect_to_target(HIGHER_BAUD_RATE) == ESP_LOADER_SUCCESS) {
-        upload_file(BINARY_PATH, 0);
+        upload_file(BINARY_PATH, APPLICATION_ADDRESS);
     }
 
     loader_port_reset_target();

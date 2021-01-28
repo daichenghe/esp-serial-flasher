@@ -31,7 +31,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
-
+#include "raspberry_port.h"
 // #define SERIAL_DEBUG_ENABLE
 
 #ifdef SERIAL_DEBUG_ENABLE
@@ -207,7 +207,7 @@ static esp_loader_error_t read_data(char *buffer, uint32_t size)
     return ESP_LOADER_SUCCESS;
 }
 
-esp_loader_error_t loader_port_raspberry_init(loader_raspberry_config_t *config)
+esp_loader_error_t loader_port_raspberry_init(const loader_raspberry_config_t *config)
 {
     s_reset_trigger_pin = config->reset_trigger_pin;
     s_gpio0_trigger_pin = config->gpio0_trigger_pin;
@@ -217,14 +217,13 @@ esp_loader_error_t loader_port_raspberry_init(loader_raspberry_config_t *config)
         printf("Serial port could not be opened!\n");
         return ESP_LOADER_ERROR_FAIL;
     }
-
-    if (gpioInitialise() < 0) {
+/*
+    if (gpioInitialise() < 0) 
+    {
         printf("pigpio initialisation failed\n");
         return ESP_LOADER_ERROR_FAIL;
     }
-
-    gpioSetMode(config->reset_trigger_pin, PI_OUTPUT);
-    gpioSetMode(config->gpio0_trigger_pin, PI_OUTPUT);
+*/
 
     return ESP_LOADER_SUCCESS;
 }
@@ -259,20 +258,24 @@ esp_loader_error_t loader_port_serial_read(uint8_t *data, uint16_t size, uint32_
 // Set GPIO0 LOW, then assert reset pin for 50 milliseconds.
 void loader_port_enter_bootloader(void)
 {
+/*
     gpioWrite(s_gpio0_trigger_pin, 0);
     gpioWrite(s_reset_trigger_pin, 0);
     loader_port_delay_ms(50);
     gpioWrite(s_reset_trigger_pin, 1);
     loader_port_delay_ms(50);
     gpioWrite(s_gpio0_trigger_pin, 1);
+*/
 }
 
 
 void loader_port_reset_target(void)
 {
+/*
     gpioWrite(s_reset_trigger_pin, 0);
     loader_port_delay_ms(50);
     gpioWrite(s_reset_trigger_pin, 1);
+*/
 }
 
 
