@@ -146,11 +146,9 @@ static esp_loader_error_t send_cmd(const void *cmd_data, uint32_t size, uint32_t
 {
     response_t response;
     command_t command = ((command_common_t *)cmd_data)->command;
-
     RETURN_ON_ERROR( SLIP_send_delimiter() );
     RETURN_ON_ERROR( SLIP_send((const uint8_t *)cmd_data, size) );
     RETURN_ON_ERROR( SLIP_send_delimiter() );
-
     return check_response(command, reg_value, &response, sizeof(response));
 }
 
@@ -210,7 +208,7 @@ static esp_loader_error_t check_response(command_t cmd, uint32_t *reg_value, voi
 {
     esp_loader_error_t err;
     common_response_t *response = (common_response_t *)resp;
-
+    printf("check respose\r\n");
     do {
         err = SLIP_receive_packet(resp, resp_size);
         if (err != ESP_LOADER_SUCCESS) {

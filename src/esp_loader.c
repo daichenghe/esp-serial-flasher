@@ -198,6 +198,7 @@ esp_loader_error_t esp_loader_connect(esp_loader_connect_args_t *connect_args)
         err = loader_sync_cmd();
         if (err == ESP_LOADER_ERROR_TIMEOUT) {
             if (--trials == 0) {
+                printf("time out1\r\n");
                 return ESP_LOADER_ERROR_TIMEOUT;
             }
             loader_port_delay_ms(100);

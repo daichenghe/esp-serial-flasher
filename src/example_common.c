@@ -20,6 +20,14 @@
 #include "esp_loader.h"
 #include "example_common.h"
 
+
+#ifndef MAX
+#define MAX(a, b) ((a) > (b)) ? (a) : (b)
+#endif
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b)) ? (a) : (b)
+#endif
 #ifndef SINGLE_TARGET_SUPPORT
 
 #define BOOTLOADER_ADDRESS_8266  0x1000

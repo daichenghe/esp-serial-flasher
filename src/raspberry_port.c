@@ -13,28 +13,50 @@
  * limitations under the License.
  */
 
+#define WINDOWS_PLATFORM
+
+
 #include "serial_io.h"
 #include "serial_comm.h"
+#ifndef WINDOWS_PLATFORM
 #include <pigpio.h>
-
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#ifndef WINDOWS_PLATFORM
 #include <termios.h>
+#else
+#include <windows.h>
+#include <time.h>
+#endif
 #include <time.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
+#ifndef WINDOWS_PLATFORM
 #include <sys/ioctl.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
 #include "raspberry_port.h"
 // #define SERIAL_DEBUG_ENABLE
 
+
+#ifndef MAX
+#define MAX(a, b) ((a) > (b)) ? (a) : (b)
+#endif
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b)) ? (a) : (b)
+#endif
+
 #ifdef SERIAL_DEBUG_ENABLE
+
+
 
 static void serial_debug_print(const uint8_t *data, uint16_t size, bool write)
 {
@@ -57,12 +79,16 @@ static void serial_debug_print(const uint8_t *data, uint16_t size, bool write) {
 
 #endif
 
+#ifndef WINDOWS_PLATFORM
 static int serial;
+#else
+static HANDLE *  serial;
+#endif
 static int64_t s_time_end;
 static int32_t s_reset_trigger_pin;
 static int32_t s_gpio0_trigger_pin;
 
-
+#ifndef WINDOWS_PLATFORM
 static speed_t convert_baudrate(int baud)
 {
     switch (baud) {
@@ -99,9 +125,86 @@ static speed_t convert_baudrate(int baud)
         default: return -1;
     }
 }
+#else
+static int convert_baudrate(int baud)
+{
+    switch (baud) {
+        case 50: return 50;
+        case 75: return 75;
+        case 110: return 110;
+        case 134: return 134;
+        case 150: return 150;
+        case 200: return 200;
+        case 300: return 300;
+        case 600: return 600;
+        case 1200: return 1200;
+        case 1800: return 1800;
+        case 2400: return 2400;
+        case 4800: return 4800;
+        case 9600: return 9600;
+        case 19200: return 19200;
+        case 38400: return 38400;
+        case 57600: return 57600;
+        case 115200: return 115200;
+        case 230400: return 230400;
+        case 460800: return 460800;
+        case 500000: return 500000;
+        case 576000: return 576000;
+        case 921600: return 921600;
+        case 1000000: return 1000000;
+        case 1152000: return 1152000;
+        case 1500000: return 1500000;
+        case 2000000: return 2000000;
+        case 2500000: return 2500000;
+        case 3000000: return 3000000;
+        case 3500000: return 3500000;
+        case 4000000: return 4000000;
+        default: return -1;
+    }
+}
+#endif
 
+
+static HANDLE* serialOpen (const char *device, uint32_t baudrate)
+{
+#ifdef WINDOWS_PLATFORM
+	int error = 0;
+	HANDLE *  handle;
+
+    if (NULL != device)
+    {
+        printf("device is: %s\r\n",device);
+        handle = CreateFileA(
+        device,
+        GENERIC_READ | GENERIC_WRITE,
+        0,                          /* no share  */
+        NULL,                       /* no security */
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,      /* no threads */
+        NULL                        /* no templates */
+        );
+
+        if (INVALID_HANDLE_VALUE == handle )
+        {
+            printf("Uart %s not found!", device);
+            error = -1;
+        }
+        else
+        {
+            printf("%s opened" , device);
+        }
+    }
+    else
+    {
+        printf("Uart instance %s not found!", device);
+    }
+
+    return handle;
+}
+#else
 static int serialOpen (const char *device, uint32_t baudrate)
 {
+
     struct termios options;
     int status, fd;
 
@@ -150,7 +253,9 @@ static int serialOpen (const char *device, uint32_t baudrate)
 
     return fd ;
 }
+#endif
 
+#ifndef WINDOWS_PLATFORM
 static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
 {
     struct termios options;
@@ -170,9 +275,35 @@ static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
 
     return ESP_LOADER_SUCCESS; 
 }
+#else
+static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
+{
+	int error = 0;
+	DCB port_settings = { 0 };
+
+	printf("tp_uart_setbaudrate %d", baudrate);
+
+	port_settings.DCBlength = sizeof(port_settings);
+	if (!GetCommState(serial, &port_settings))
+	{
+		error = -1;
+	}
+
+	port_settings.BaudRate = baudrate;
+
+	if (!SetCommState(serial, &port_settings))
+	{
+		error = -2;
+	}
+
+	return error;
+}
+#endif
+
 
 static void set_timeout(uint32_t timeout)
 {
+#ifndef WINDOWS_PLATFORM
     struct termios options;
 
     timeout /= 100;
@@ -181,10 +312,31 @@ static void set_timeout(uint32_t timeout)
     tcgetattr(serial, &options);
     options.c_cc[VTIME] = timeout;
     tcsetattr(serial, TCSANOW, &options);
+#else
+	COMMTIMEOUTS  port_timeouts;
+    //timeout /= 100;
+    //timeout = MAX(timeout, 1);
+    timeout = MAX(timeout, 1);
+    //port_timeouts.ReadIntervalTimeout = 100;
+    port_timeouts.ReadTotalTimeoutMultiplier = 0;
+    port_timeouts.ReadTotalTimeoutConstant = timeout;
+    port_timeouts.WriteTotalTimeoutMultiplier = 0;
+    port_timeouts.WriteTotalTimeoutConstant = timeout;
+
+    if (!SetCommTimeouts(serial, &port_timeouts))
+    {
+        return -1;
+    }
+    else
+    {
+        return -2;
+    }
+#endif
 }
 
 static esp_loader_error_t read_char(char *c, uint32_t timeout)
 {
+#ifndef WINDOWS_PLATFORM
     set_timeout(timeout);
     int read_bytes = read(serial, c, 1);
 
@@ -195,12 +347,29 @@ static esp_loader_error_t read_char(char *c, uint32_t timeout)
     } else {
         return ESP_LOADER_ERROR_FAIL;
     }
+#else
+    set_timeout(timeout);
+    int read_bytes = 0;
+	ReadFile(serial, c, 1, (LPDWORD)(&read_bytes), NULL);
+    if (read_bytes == 1) {
+        printf("suc\r\n");
+        return ESP_LOADER_SUCCESS;
+    } else if (read_bytes == 0) {
+        printf("time out\r\n");
+        return ESP_LOADER_ERROR_TIMEOUT;
+    } else {
+        printf("fail\r\n");
+        return ESP_LOADER_ERROR_FAIL;
+    }
+#endif
 }
 
 static esp_loader_error_t read_data(char *buffer, uint32_t size)
 {
     for (int i = 0; i < size; i++) {
         uint32_t remaining_time = loader_port_remaining_time();
+        remaining_time = 10000;
+        printf("remain time = %d\r\n",remaining_time);
         RETURN_ON_ERROR( read_char(&buffer[i], remaining_time) );
     }
 
@@ -211,7 +380,7 @@ esp_loader_error_t loader_port_raspberry_init(const loader_raspberry_config_t *c
 {
     s_reset_trigger_pin = config->reset_trigger_pin;
     s_gpio0_trigger_pin = config->gpio0_trigger_pin;
-
+    printf("device is: %s\r\n",config->device);
     serial = serialOpen(config->device, config->baudrate);
     if (serial < 0) {
         printf("Serial port could not be opened!\n");
@@ -231,6 +400,7 @@ esp_loader_error_t loader_port_raspberry_init(const loader_raspberry_config_t *c
 
 esp_loader_error_t loader_port_serial_write(const uint8_t *data, uint16_t size, uint32_t timeout)
 {
+#ifndef WINDOWS_PLATFORM
     serial_debug_print(data, size, true);
 
     int written = write(serial, data, size);
@@ -242,6 +412,21 @@ esp_loader_error_t loader_port_serial_write(const uint8_t *data, uint16_t size, 
     } else {
         return ESP_LOADER_SUCCESS;
     }
+#else
+    serial_debug_print(data, size, true);
+
+    //int written = write(serial, data, size);
+    int written = 0;
+	BOOL write_status = WriteFile(serial, data, size, (LPDWORD)(&written), NULL);
+    if (written < 0) {
+        return ESP_LOADER_ERROR_FAIL;
+    } else if (written < size) {
+        return ESP_LOADER_ERROR_TIMEOUT;
+    } else {
+        return ESP_LOADER_SUCCESS;
+    }
+
+#endif
 }
 
 
