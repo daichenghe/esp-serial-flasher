@@ -208,7 +208,7 @@ static esp_loader_error_t check_response(command_t cmd, uint32_t *reg_value, voi
 {
     esp_loader_error_t err;
     common_response_t *response = (common_response_t *)resp;
-    printf("check respose\r\n");
+    // printf("check respose\r\n");
     do {
         err = SLIP_receive_packet(resp, resp_size);
         if (err != ESP_LOADER_SUCCESS) {

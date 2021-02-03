@@ -480,10 +480,13 @@ uint32_t loader_port_remaining_time(void)
 {
     // printf("s_time_end = %d\r\n",s_time_end);
     // printf("clock() = %d\r\n",clock());
+#ifdef WINDOWS_PLATFORM
     int64_t remaining = (s_time_end - clock()) ;
     return (remaining > 0) ? (uint32_t)remaining : 0;
-    // int64_t remaining = (s_time_end - clock()) / 1000;
-    // return (remaining > 0) ? (uint32_t)remaining : 0;
+#else
+    int64_t remaining = (s_time_end - clock()) / 1000;
+    return (remaining > 0) ? (uint32_t)remaining : 0;
+#endif
 }
 
 
