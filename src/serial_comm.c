@@ -35,7 +35,7 @@ static inline esp_loader_error_t serial_read(uint8_t *buff, size_t size)
     return loader_port_serial_read(buff, size, loader_port_remaining_time());
 }
 
-static inline esp_loader_error_t serial_write(const uint8_t *buff, size_t size)
+esp_loader_error_t serial_write(const uint8_t *buff, size_t size)
 {
     return loader_port_serial_write(buff, size, loader_port_remaining_time());
 }
@@ -84,24 +84,72 @@ static esp_loader_error_t SLIP_receive_packet(uint8_t *buff, uint32_t size)
     do {
         RETURN_ON_ERROR( serial_read(&ch, 1) );
     } while (ch != DELIMITER);
-
+    printf("test100-1\r\n");
     // Workaround: bootloader sends two dummy(0xC0) bytes after response when baud rate is changed.
     do {
         RETURN_ON_ERROR( serial_read(&ch, 1) );
     } while (ch == DELIMITER);
-
+    printf("test100-2\r\n");
     buff[0] = ch;
 
     RETURN_ON_ERROR( SLIP_receive_data(&buff[1], size - 1) );
-
+    printf("test100-3\r\n");
     // Wait for delimiter
     do {
         RETURN_ON_ERROR( serial_read(&ch, 1) );
     } while (ch != DELIMITER);
-
+    printf("test100-4\r\n");
     return ESP_LOADER_SUCCESS;
 }
 
+static esp_loader_error_t SLIP_send_pre(const uint8_t *data, uint32_t size)
+{
+
+    uint32_t to_write = 0;
+    uint32_t written = 0;
+
+    for (int i = 0; i < size; i++) {
+        if (data[i] != 0xC0 && data[i] != 0xDB) {
+            to_write++;
+            continue;
+        }
+
+        if (to_write > 0) {
+            RETURN_ON_ERROR( serial_write(&data[written], to_write) );
+        }
+
+        if (data[i] == 0xC0) {
+            RETURN_ON_ERROR( serial_write(C0_REPLACEMENT, 2) );
+        } else {
+            RETURN_ON_ERROR( serial_write(DB_REPLACEMENT, 2) );
+        }
+
+        written = i + 1;
+        to_write = 0;
+    }
+
+    if (to_write > 0) {
+#if 1
+        uint8_t* buff_to_send;
+        buff_to_send = (char *)malloc((to_write + 2) * sizeof(char));
+        memset(buff_to_send,0,to_write + 2);
+        buff_to_send[0] = 0xc0;
+        memcpy(&buff_to_send[1],&data[written],to_write);
+        buff_to_send[to_write + 1] = 0xc0;
+        RETURN_ON_ERROR( serial_write(buff_to_send, to_write + 2) ) ;
+        for(int i = 0;i<to_write + 2 ;i++)
+        {
+            printf("%x ",buff_to_send[i]);
+        }
+        printf("\r\n");
+#else
+        char test_buff[46] = {0xc0,0,8,36,0,0,0,0,0,7,7,18,32,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,0xc0};
+        RETURN_ON_ERROR( serial_write(test_buff, 46) ) ;
+#endif
+    }
+
+    return ESP_LOADER_SUCCESS;
+}
 
 static esp_loader_error_t SLIP_send(const uint8_t *data, uint32_t size)
 {
@@ -129,6 +177,21 @@ static esp_loader_error_t SLIP_send(const uint8_t *data, uint32_t size)
     }
 
     if (to_write > 0) {
+
+        // uint8_t* buff_to_send;
+        // buff_to_send = (char *)malloc((to_write + 2) * sizeof(char));
+        // printf("to_write = %d,written = %d\r\n",to_write,written);
+        // memset(buff_to_send,0,to_write + 2);
+        // buff_to_send[0] = 0xc0;
+        // memcpy(&buff_to_send[1],&data[written],to_write);
+        // buff_to_send[to_write + 1] = 0xc0;
+
+        // for(int i = 0;i<to_write + 2 ;i++)
+        // {
+        //     printf("%x ",buff_to_send[i]);
+        // }
+        // printf("\r\n");
+        // RETURN_ON_ERROR( serial_write(buff_to_send, to_write + 2) ) ;
         RETURN_ON_ERROR( serial_write(&data[written], to_write) );
     }
 
@@ -150,6 +213,26 @@ static esp_loader_error_t send_cmd(const void *cmd_data, uint32_t size, uint32_t
     RETURN_ON_ERROR( SLIP_send((const uint8_t *)cmd_data, size) );
     RETURN_ON_ERROR( SLIP_send_delimiter() );
     return check_response(command, reg_value, &response, sizeof(response));
+}
+
+static esp_loader_error_t send_cmd_pre(const void *cmd_data, uint32_t size, uint32_t *reg_value)
+{
+#if 0
+    char test_buff[46] = {0xc0, 0x00, 0x8, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x07, 0x12, 0x20, \
+    0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, \
+    0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0xc0};
+    serial_write(test_buff, 46);
+    response_t response;
+    command_t command = ((command_common_t *)cmd_data)->command;
+    return check_response(command, reg_value, &response, sizeof(response));
+#else
+    response_t response;
+    command_t command = ((command_common_t *)cmd_data)->command;
+    //RETURN_ON_ERROR( SLIP_send_delimiter() );
+    RETURN_ON_ERROR( SLIP_send_pre((const uint8_t *)cmd_data, size) );
+    //RETURN_ON_ERROR( SLIP_send_delimiter() );
+    return check_response(command, reg_value, &response, sizeof(response));
+#endif
 }
 
 
@@ -212,6 +295,7 @@ static esp_loader_error_t check_response(command_t cmd, uint32_t *reg_value, voi
     do {
         err = SLIP_receive_packet(resp, resp_size);
         if (err != ESP_LOADER_SUCCESS) {
+            printf("test100\r\n");
             return err;
         }
     } while ((response->direction != READ_DIRECTION) || (response->command != cmd));
@@ -220,13 +304,14 @@ static esp_loader_error_t check_response(command_t cmd, uint32_t *reg_value, voi
 
     if (status->failed) {
         log_loader_internal_error(status->error);
+        printf("test101\r\n");
         return ESP_LOADER_ERROR_INVALID_RESPONSE;
     }
 
     if (reg_value != NULL) {
         *reg_value = response->value;
     }
-
+    printf("test102\r\n");
     return ESP_LOADER_SUCCESS;
 }
 
@@ -256,7 +341,7 @@ esp_loader_error_t loader_flash_begin_cmd(uint32_t offset,
     s_sequence_number = 0;
 
 
-    return send_cmd(&begin_cmd, sizeof(begin_cmd) - encription, NULL);
+    return send_cmd_pre(&begin_cmd, sizeof(begin_cmd) - encription, NULL);
 }
 
 
@@ -292,9 +377,26 @@ esp_loader_error_t loader_flash_end_cmd(bool stay_in_loader)
     return send_cmd(&end_cmd, sizeof(end_cmd), NULL);
 }
 
+sync_command_t sync_cmd = {
+    .common = {
+        .direction = WRITE_DIRECTION,
+        .command = SYNC,
+        .size = CMD_SIZE(sync_cmd),
+        .checksum = 0
+    },
+    .sync_sequence = {
+        0x07, 0x07, 0x12, 0x20,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+    }
+};
 
 esp_loader_error_t loader_sync_cmd(void)
 {
+
+#if 1
     sync_command_t sync_cmd = {
         .common = {
             .direction = WRITE_DIRECTION,
@@ -310,8 +412,12 @@ esp_loader_error_t loader_sync_cmd(void)
             0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
         }
     };
+    return send_cmd_pre(&sync_cmd, sizeof(sync_cmd), NULL);
+#else
 
-    return send_cmd(&sync_cmd, sizeof(sync_cmd), NULL);
+    char test_buff[46] = {0xc0,0,8,36,0,0,0,0,0,7,7,18,32,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,0xc0};
+    RETURN_ON_ERROR( serial_write(test_buff, 46) ) ;
+#endif
 }
 
 
@@ -331,7 +437,7 @@ esp_loader_error_t loader_write_reg_cmd(uint32_t address, uint32_t value,
         .delay_us = delay_us
     };
 
-    return send_cmd(&write_cmd, sizeof(write_cmd), NULL);
+    return send_cmd_pre(&write_cmd, sizeof(write_cmd), NULL);       //TODO:
 }
 
 
@@ -347,7 +453,7 @@ esp_loader_error_t loader_read_reg_cmd(uint32_t address, uint32_t *reg)
         .address = address,
     };
 
-    return send_cmd(&read_cmd, sizeof(read_cmd), reg);
+    return send_cmd_pre(&read_cmd, sizeof(read_cmd), reg);
 }
 
 
@@ -364,7 +470,7 @@ esp_loader_error_t loader_spi_attach_cmd(uint32_t config)
         .zero = 0
     };
 
-    return send_cmd(&attach_cmd, sizeof(attach_cmd), NULL);
+    return send_cmd_pre(&attach_cmd, sizeof(attach_cmd), NULL);
 }
 
 esp_loader_error_t loader_change_baudrate_cmd(uint32_t baudrate)
@@ -380,7 +486,7 @@ esp_loader_error_t loader_change_baudrate_cmd(uint32_t baudrate)
         .old_baudrate = 0 // ESP32 ROM only
     };
 
-    return send_cmd(&baudrate_cmd, sizeof(baudrate_cmd), NULL);
+    return send_cmd_pre(&baudrate_cmd, sizeof(baudrate_cmd), NULL);
 }
 
 esp_loader_error_t loader_md5_cmd(uint32_t address, uint32_t size, uint8_t *md5_out)
@@ -418,7 +524,7 @@ esp_loader_error_t loader_spi_parameters(uint32_t total_size)
         .status_mask = 0xFFFF,
     };
 
-    return send_cmd(&spi_cmd, sizeof(spi_cmd), NULL);
+    return send_cmd_pre(&spi_cmd, sizeof(spi_cmd), NULL);
 }
 
 __attribute__ ((weak)) void loader_port_debug_print(const char *str)

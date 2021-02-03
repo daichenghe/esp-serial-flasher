@@ -44,7 +44,7 @@
 #include <sys/param.h>
 #include "raspberry_port.h"
 // #define SERIAL_DEBUG_ENABLE
-
+#include "esp_loader.h"
 
 #ifndef MAX
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
@@ -180,7 +180,7 @@ static HANDLE* serialOpen (const char *device, uint32_t baudrate)
         0,                          /* no share  */
         NULL,                       /* no security */
         OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,      /* no threads */
+        FILE_ATTRIBUTE_NORMAL ,      /* no threads */
         NULL                        /* no templates */
         );
 
@@ -191,7 +191,7 @@ static HANDLE* serialOpen (const char *device, uint32_t baudrate)
         }
         else
         {
-            printf("%s opened" , device);
+            printf("%s opened\r\n" , device);
         }
     }
     else
@@ -281,7 +281,7 @@ static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
 	int error = 0;
 	DCB port_settings = { 0 };
 
-	printf("tp_uart_setbaudrate %d", baudrate);
+	printf("tp_uart_setbaudrate %d\r\n", baudrate);
 
 	port_settings.DCBlength = sizeof(port_settings);
 	if (!GetCommState(serial, &port_settings))
@@ -295,7 +295,11 @@ static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
 	{
 		error = -2;
 	}
-
+	if (!GetCommState(serial, &port_settings))
+	{
+		error = -1;
+	}
+    printf("port_settings.BaudRate = %d\r\n",port_settings.BaudRate);
 	return error;
 }
 #endif
@@ -317,11 +321,11 @@ static void set_timeout(uint32_t timeout)
     //timeout /= 100;
     //timeout = MAX(timeout, 1);
     timeout = MAX(timeout, 1);
-    //port_timeouts.ReadIntervalTimeout = 100;
+    port_timeouts.ReadIntervalTimeout = MAXDWORD;
     port_timeouts.ReadTotalTimeoutMultiplier = 0;
     port_timeouts.ReadTotalTimeoutConstant = timeout;
     port_timeouts.WriteTotalTimeoutMultiplier = 0;
-    port_timeouts.WriteTotalTimeoutConstant = timeout;
+    port_timeouts.WriteTotalTimeoutConstant = 0;
 
     if (!SetCommTimeouts(serial, &port_timeouts))
     {
@@ -334,7 +338,7 @@ static void set_timeout(uint32_t timeout)
 #endif
 }
 
-static esp_loader_error_t read_char(char *c, uint32_t timeout)
+static esp_loader_error_t read_char(uint8_t *c, uint32_t timeout)
 {
 #ifndef WINDOWS_PLATFORM
     set_timeout(timeout);
@@ -350,9 +354,10 @@ static esp_loader_error_t read_char(char *c, uint32_t timeout)
 #else
     set_timeout(timeout);
     int read_bytes = 0;
-	ReadFile(serial, c, 1, (LPDWORD)(&read_bytes), NULL);
+
+	ReadFile(serial, c, 1, (&read_bytes), NULL);
     if (read_bytes == 1) {
-        //printf("suc\r\n");
+        printf("c = %x\r\n",*c);
         return ESP_LOADER_SUCCESS;
     } else if (read_bytes == 0) {
         printf("time out\r\n");
@@ -366,10 +371,10 @@ static esp_loader_error_t read_char(char *c, uint32_t timeout)
 
 static esp_loader_error_t read_data(char *buffer, uint32_t size)
 {
+    printf("to read\r\n");
     for (int i = 0; i < size; i++) {
         uint32_t remaining_time = loader_port_remaining_time();
         //remaining_time = 10000;
-        //printf("remain time = %d\r\n",remaining_time);
         RETURN_ON_ERROR( read_char(&buffer[i], remaining_time) );
     }
 
@@ -382,6 +387,10 @@ esp_loader_error_t loader_port_raspberry_init(const loader_raspberry_config_t *c
     s_gpio0_trigger_pin = config->gpio0_trigger_pin;
     printf("device is: %s\r\n",config->device);
     serial = serialOpen(config->device, config->baudrate);
+    esp_loader_error_t err = loader_port_change_baudrate(115200);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Unable to change baud rate.\r\n");
+    }
     if (serial < 0) {
         printf("Serial port could not be opened!\n");
         return ESP_LOADER_ERROR_FAIL;
@@ -414,7 +423,11 @@ esp_loader_error_t loader_port_serial_write(const uint8_t *data, uint16_t size, 
     }
 #else
     serial_debug_print(data, size, true);
-
+    // for(int i = 0;i<size ;i++)
+    // {
+    //     printf("%x ",data[i]);
+    // }
+    // printf("\r\n");
     //int written = write(serial, data, size);
     int written = 0;
 	BOOL write_status = WriteFile(serial, data, size, (LPDWORD)(&written), NULL);
@@ -478,10 +491,11 @@ void loader_port_start_timer(uint32_t ms)
 
 uint32_t loader_port_remaining_time(void)
 {
-    // printf("s_time_end = %d\r\n",s_time_end);
-    // printf("clock() = %d\r\n",clock());
+
 #ifdef WINDOWS_PLATFORM
     int64_t remaining = (s_time_end - clock()) ;
+    // printf("remaining = %d\r\n",remaining);
+    // printf("clock() = %d\r\n",clock());
     return (remaining > 0) ? (uint32_t)remaining : 0;
 #else
     int64_t remaining = (s_time_end - clock()) / 1000;
