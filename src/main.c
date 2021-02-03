@@ -24,7 +24,7 @@
 
 
 //#define SERIAL_DEVICE     "/dev/ttyUSB0"
-#define SERIAL_DEVICE     "\\\\.\\COM98"
+#define SERIAL_DEVICE     "\\\\.\\COM88"
 
 #define BINARY_PATH       "./Firmware.bin"
 
@@ -32,11 +32,35 @@
 #define PARTITION_ADDRESS   0x8000
 #define APPLICATION_ADDRESS 0x10000
 
-static void upload_file(const char *path, size_t address)
+static int get_buffer(const char* path,char** buffer)
+{
+    FILE *image = fopen(path, "rb");
+    if (image == NULL) {
+        printf("Error:Failed to open file %s\n", path);
+        return;
+    }
+
+    fseek(image, 0L, SEEK_END);
+    size_t size = ftell(image);
+    rewind(image);
+    fseek(image, 0, SEEK_SET);
+    printf("File %s opened. Size: %u bytes\n", path, size);
+
+    *buffer = (char *)malloc(size);
+    if (*buffer == NULL) {
+        printf("Error: Failed allocate memory\n");
+        return -1;
+    }
+    uint32_t bytes_read = fread(*buffer, 1, size, image);
+    return bytes_read;
+}
+
+static void upload_file(loader_raspberry_config_t* config)
 {
     char *buffer = NULL;
-
-    FILE *image = fopen(path, "rb");
+    int size = 0;
+#if 0
+    FILE *image = fopen(config->boot_path, "rb");
     if (image == NULL) {
         printf("Error:Failed to open file %s\n", path);
         return;
@@ -57,33 +81,57 @@ static void upload_file(const char *path, size_t address)
     // copy file content to buffer
     //size_t bytes_read = fread(buffer, 1, size, image);
     uint32_t bytes_read = fread(buffer, 1, size, image);
-    printf("bytes_read = %d\r\n,size = %d\r\n",bytes_read,size);
-#if 1
-    if (bytes_read != size) {
-        printf("Error occurred while reading file");
-        goto cleanup;
-    }
 #endif
-    flash_binary(buffer, size, address);
+    size = get_buffer(config->boot_path, &buffer);
+    flash_binary(buffer, size, config->bootloader_address);
+    free(buffer);
 
+    size = get_buffer(config->app_path, &buffer);
+    flash_binary(buffer, size, config->application_address);
+    free(buffer);
+
+    size = get_buffer(config->part_path, &buffer);
+    flash_binary(buffer, size, config->partition_address);
+    free(buffer);
+
+/*
+    flash_binary(buffer, size, config->partition_address);
+    flash_binary(buffer, size, config->application_address);
+*/
 cleanup:
-    fclose(image);
     free(buffer);
 }
-
-int main(void)
+#define TP_UART_FILENAME_PREFIX     "\\\\.\\"
+int main(int argc,int* argv[])
 {
-    const loader_raspberry_config_t config = {
+    char com_set[50];
+    if(argc > 1)
+    {
+        strcpy(com_set, TP_UART_FILENAME_PREFIX);
+        strcpy(&com_set[strlen(TP_UART_FILENAME_PREFIX)],argv[1]);
+        printf("com = %s\r\n",com_set);
+    }
+    else
+    {
+        strcpy(com_set,SERIAL_DEVICE);
+    }
+    loader_raspberry_config_t config = {
         .device = SERIAL_DEVICE,
         .baudrate = DEFAULT_BAUD_RATE,
         .reset_trigger_pin = TARGET_RST_Pin,
         .gpio0_trigger_pin = TARGET_IO0_Pin,
+        .partition_address = PARTITION_ADDRESS,
+        .bootloader_address = BOOTLOADER_ADDRESS,
+        .application_address = APPLICATION_ADDRESS,
+        .app_path = "./app.bin",
+        .boot_path = "./boot.bin",
+        .part_path = "./part.bin"
     };
-
+    config.device = com_set;
     loader_port_raspberry_init(&config);
 
     if (connect_to_target(HIGHER_BAUD_RATE) == ESP_LOADER_SUCCESS) {
-        upload_file(BINARY_PATH, APPLICATION_ADDRESS);
+        upload_file(&config);
     }
 
     loader_port_reset_target();

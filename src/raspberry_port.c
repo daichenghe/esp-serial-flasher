@@ -368,7 +368,7 @@ static esp_loader_error_t read_data(char *buffer, uint32_t size)
 {
     for (int i = 0; i < size; i++) {
         uint32_t remaining_time = loader_port_remaining_time();
-        remaining_time = 10000;
+        remaining_time = 20000;
         printf("remain time = %d\r\n",remaining_time);
         RETURN_ON_ERROR( read_char(&buffer[i], remaining_time) );
     }

@@ -28,6 +28,7 @@ endif
 
 ifeq "$(CFG)" "Debug"
 CFLAGS +=  -MMD  -w
+CFLAGS += -O2
 else
 CFLAGS += -W
 CFLAGS += -o1

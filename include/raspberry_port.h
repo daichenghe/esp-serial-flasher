@@ -23,6 +23,12 @@ typedef struct {
     uint32_t baudrate;
     uint32_t reset_trigger_pin;
     uint32_t gpio0_trigger_pin;
+    uint32_t partition_address;
+    uint32_t bootloader_address;
+    uint32_t application_address;
+    char* app_path;
+    char* boot_path;
+    char* part_path;
 } loader_raspberry_config_t;
 
 esp_loader_error_t loader_port_raspberry_init(const loader_raspberry_config_t *config);
