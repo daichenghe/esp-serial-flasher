@@ -130,7 +130,8 @@ int main(int argc,int* argv[])
     config.device = com_set;
     loader_port_raspberry_init(&config);
 
-    if (connect_to_target(HIGHER_BAUD_RATE) == ESP_LOADER_SUCCESS) {
+    if (connect_to_target(HIGHER_BAUD_RATE) == ESP_LOADER_SUCCESS) 
+    {
         upload_file(&config);
     }
 

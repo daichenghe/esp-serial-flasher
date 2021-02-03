@@ -352,7 +352,7 @@ static esp_loader_error_t read_char(char *c, uint32_t timeout)
     int read_bytes = 0;
 	ReadFile(serial, c, 1, (LPDWORD)(&read_bytes), NULL);
     if (read_bytes == 1) {
-        printf("suc\r\n");
+        //printf("suc\r\n");
         return ESP_LOADER_SUCCESS;
     } else if (read_bytes == 0) {
         printf("time out\r\n");
@@ -368,8 +368,8 @@ static esp_loader_error_t read_data(char *buffer, uint32_t size)
 {
     for (int i = 0; i < size; i++) {
         uint32_t remaining_time = loader_port_remaining_time();
-        remaining_time = 20000;
-        printf("remain time = %d\r\n",remaining_time);
+        //remaining_time = 10000;
+        //printf("remain time = %d\r\n",remaining_time);
         RETURN_ON_ERROR( read_char(&buffer[i], remaining_time) );
     }
 
@@ -478,8 +478,12 @@ void loader_port_start_timer(uint32_t ms)
 
 uint32_t loader_port_remaining_time(void)
 {
-    int64_t remaining = (s_time_end - clock()) / 1000;
+    // printf("s_time_end = %d\r\n",s_time_end);
+    // printf("clock() = %d\r\n",clock());
+    int64_t remaining = (s_time_end - clock()) ;
     return (remaining > 0) ? (uint32_t)remaining : 0;
+    // int64_t remaining = (s_time_end - clock()) / 1000;
+    // return (remaining > 0) ? (uint32_t)remaining : 0;
 }
 
 
