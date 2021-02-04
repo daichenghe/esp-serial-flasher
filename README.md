@@ -1,4 +1,4 @@
-# Serial flasher
+# Serial flasher for windows and linux
 
 ## Overview
 
