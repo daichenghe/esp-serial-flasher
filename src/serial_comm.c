@@ -137,11 +137,11 @@ static esp_loader_error_t SLIP_send_pre(const uint8_t *data, uint32_t size)
         memcpy(&buff_to_send[1],&data[written],to_write);
         buff_to_send[to_write + 1] = 0xc0;
         RETURN_ON_ERROR( serial_write(buff_to_send, to_write + 2) ) ;
-        for(int i = 0;i<to_write + 2 ;i++)
-        {
-            printf("%x ",buff_to_send[i]);
-        }
-        printf("\r\n");
+        // for(int i = 0;i<to_write + 2 ;i++)
+        // {
+        //     printf("%x ",buff_to_send[i]);
+        // }
+        // printf("\r\n");
 #else
         char test_buff[46] = {0xc0,0,8,36,0,0,0,0,0,7,7,18,32,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,0xc0};
         RETURN_ON_ERROR( serial_write(test_buff, 46) ) ;

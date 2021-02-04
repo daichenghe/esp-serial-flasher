@@ -1,4 +1,4 @@
-Target = raspberry_upgrade_esp32
+Target = esp32_upgrade_app
 
 
 INC += -I./include
@@ -33,7 +33,7 @@ else
 CFLAGS += -W
 CFLAGS += -o1
 endif
-
+ODJ_DIR:= $(shell mkdir build)
 OUTDIR = build
 COMPILE = @$(CC)  $(LIBS)  $(INC)  $(CFLAGS) -c $<   -o  $@
 

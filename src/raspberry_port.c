@@ -288,7 +288,7 @@ static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
 	{
 		error = -1;
 	}
-
+    printf("port_settings.BaudRate = %d\r\n",port_settings.BaudRate);
 	port_settings.BaudRate = baudrate;
 
 	if (!SetCommState(serial, &port_settings))
@@ -357,7 +357,7 @@ static esp_loader_error_t read_char(uint8_t *c, uint32_t timeout)
 
 	ReadFile(serial, c, 1, (&read_bytes), NULL);
     if (read_bytes == 1) {
-        printf("c = %x\r\n",*c);
+        //printf("c = %x\r\n",*c);
         return ESP_LOADER_SUCCESS;
     } else if (read_bytes == 0) {
         printf("time out\r\n");
