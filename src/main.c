@@ -24,7 +24,7 @@
 
 
 //#define SERIAL_DEVICE     "/dev/ttyUSB0"
-#define SERIAL_DEVICE     "\\\\.\\COM88"
+#define SERIAL_DEVICE     "\\\\.\\COM41"
 
 #define BINARY_PATH       "./Firmware.bin"
 

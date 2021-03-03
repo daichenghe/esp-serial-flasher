@@ -84,21 +84,17 @@ static esp_loader_error_t SLIP_receive_packet(uint8_t *buff, uint32_t size)
     do {
         RETURN_ON_ERROR( serial_read(&ch, 1) );
     } while (ch != DELIMITER);
-    printf("test100-1\r\n");
     // Workaround: bootloader sends two dummy(0xC0) bytes after response when baud rate is changed.
     do {
         RETURN_ON_ERROR( serial_read(&ch, 1) );
     } while (ch == DELIMITER);
-    printf("test100-2\r\n");
     buff[0] = ch;
 
     RETURN_ON_ERROR( SLIP_receive_data(&buff[1], size - 1) );
-    printf("test100-3\r\n");
     // Wait for delimiter
     do {
         RETURN_ON_ERROR( serial_read(&ch, 1) );
     } while (ch != DELIMITER);
-    printf("test100-4\r\n");
     return ESP_LOADER_SUCCESS;
 }
 
@@ -295,7 +291,6 @@ static esp_loader_error_t check_response(command_t cmd, uint32_t *reg_value, voi
     do {
         err = SLIP_receive_packet(resp, resp_size);
         if (err != ESP_LOADER_SUCCESS) {
-            printf("test100\r\n");
             return err;
         }
     } while ((response->direction != READ_DIRECTION) || (response->command != cmd));
@@ -304,14 +299,12 @@ static esp_loader_error_t check_response(command_t cmd, uint32_t *reg_value, voi
 
     if (status->failed) {
         log_loader_internal_error(status->error);
-        printf("test101\r\n");
         return ESP_LOADER_ERROR_INVALID_RESPONSE;
     }
 
     if (reg_value != NULL) {
         *reg_value = response->value;
     }
-    printf("test102\r\n");
     return ESP_LOADER_SUCCESS;
 }
 

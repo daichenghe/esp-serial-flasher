@@ -360,7 +360,6 @@ static esp_loader_error_t read_char(uint8_t *c, uint32_t timeout)
         //printf("c = %x\r\n",*c);
         return ESP_LOADER_SUCCESS;
     } else if (read_bytes == 0) {
-        printf("time out\r\n");
         return ESP_LOADER_ERROR_TIMEOUT;
     } else {
         printf("fail\r\n");
@@ -371,7 +370,6 @@ static esp_loader_error_t read_char(uint8_t *c, uint32_t timeout)
 
 static esp_loader_error_t read_data(char *buffer, uint32_t size)
 {
-    printf("to read\r\n");
     for (int i = 0; i < size; i++) {
         uint32_t remaining_time = loader_port_remaining_time();
         //remaining_time = 10000;

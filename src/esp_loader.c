@@ -189,11 +189,8 @@ static esp_loader_error_t detect_chip(target_chip_t *target)
     c0 0 a 4 0 0 0 0 0 78 0 0 60 c0
 #else
     uint32_t reg_1, reg_2;
-    printf("test1-1\r\n");
     RETURN_ON_ERROR( esp_loader_read_register(UART_DATE_REG_ADDR,  &reg_1) );
-    printf("test1-2\r\n");
     RETURN_ON_ERROR( esp_loader_read_register(UART_DATE_REG2_ADDR, &reg_2) );
-    printf("test1-3\r\n");
     for (int chip = 0; chip < ESP_MAX_CHIP; chip++) {
         const date_registers_t *r = &s_date_regs[chip];
         if (r->reg_1 == reg_1 && (r->reg_2 == 0 || r->reg_2 == reg_2)) {
@@ -213,7 +210,6 @@ esp_loader_error_t esp_loader_connect(esp_loader_connect_args_t *connect_args)
     int32_t trials = connect_args->trials;
 
     loader_port_enter_bootloader();
-    printf("test0\r\n");
     do {
         loader_port_start_timer(connect_args->sync_timeout);
         err = loader_sync_cmd();
@@ -223,7 +219,6 @@ esp_loader_error_t esp_loader_connect(esp_loader_connect_args_t *connect_args)
         // err = serial_write(test_buff, 46);    
         if (err == ESP_LOADER_ERROR_TIMEOUT) {
             if (--trials == 0) {
-                printf("time out1\r\n");
                 return ESP_LOADER_ERROR_TIMEOUT;
             }
             loader_port_delay_ms(100);
@@ -231,18 +226,14 @@ esp_loader_error_t esp_loader_connect(esp_loader_connect_args_t *connect_args)
             return err;
         }
     } while (err != ESP_LOADER_SUCCESS);
-    printf("test1\r\n");
     RETURN_ON_ERROR( detect_chip(&s_target) );
-    printf("test2\r\n");
     s_reg = &registers[s_target];
 
     if (s_target == ESP8266_CHIP) {
         err = loader_flash_begin_cmd(0, 0, 0, 0, s_target);
     } else {
         loader_port_start_timer(DEFAULT_TIMEOUT);
-        printf("test3\r\n");
         err = loader_spi_attach_cmd(connect_args->spi_pin_config.val);
-        printf("test4 err = %d\r\n",err);
     }
 
     return err;
@@ -290,17 +281,13 @@ static esp_loader_error_t spi_flash_command(spi_flash_cmd_t cmd, void *data_tx, 
     // Save SPI configuration
     uint32_t old_spi_usr;
     uint32_t old_spi_usr2;
-    printf("test10\r\n");
     RETURN_ON_ERROR( esp_loader_read_register(s_reg->usr, &old_spi_usr) );
-    printf("test11\r\n");
     RETURN_ON_ERROR( esp_loader_read_register(s_reg->usr2, &old_spi_usr2) );
-    printf("test12\r\n");
     if (s_target == ESP8266_CHIP) {
         RETURN_ON_ERROR( spi_set_data_lengths_8266(tx_size, rx_size) );
     } else {
         RETURN_ON_ERROR( spi_set_data_lengths(tx_size, rx_size) );
     }
-    printf("test13\r\n");
     uint32_t usr_reg_2 = (7 << CMD_LEN_SHIFT) | cmd;
     uint32_t usr_reg = SPI_USR_CMD;
     if (rx_size > 0) {
@@ -309,15 +296,11 @@ static esp_loader_error_t spi_flash_command(spi_flash_cmd_t cmd, void *data_tx, 
     if (tx_size > 0) {
         usr_reg |= SPI_USR_MOSI;
     }
-    printf("test14\r\n");
     RETURN_ON_ERROR( esp_loader_write_register(s_reg->usr, usr_reg) );
-    printf("test15\r\n");
     RETURN_ON_ERROR( esp_loader_write_register(s_reg->usr2, usr_reg_2 ) );
-    printf("test16\r\n");
     if (tx_size == 0) {
         // clear data register before we read it
         RETURN_ON_ERROR( esp_loader_write_register(s_reg->w0, 0) );
-        printf("test17\r\n");
     } else {
         uint32_t *data = (uint32_t *)data_tx;
         uint32_t words_to_write = MIN((tx_size + 31) / 8 * 4, 1);
@@ -329,7 +312,6 @@ static esp_loader_error_t spi_flash_command(spi_flash_cmd_t cmd, void *data_tx, 
             data_reg_addr += 4;
         }
     }
-    printf("test18\r\n");
     RETURN_ON_ERROR( esp_loader_write_register(s_reg->cmd, SPI_CMD_USR) );
 
     uint32_t trials = 10;
@@ -340,17 +322,13 @@ static esp_loader_error_t spi_flash_command(spi_flash_cmd_t cmd, void *data_tx, 
             break;
         }
     }
-    printf("test19\r\n");
     if (trials == 0) {
         return ESP_LOADER_ERROR_TIMEOUT;
     }
-    printf("test20\r\n");
     RETURN_ON_ERROR( esp_loader_read_register(s_reg->w0, data_rx) );
-    printf("test21\r\n");
     // Restore SPI configuration
     RETURN_ON_ERROR( esp_loader_write_register(s_reg->usr, old_spi_usr) );
     RETURN_ON_ERROR( esp_loader_write_register(s_reg->usr2, old_spi_usr2) );
-    printf("test22\r\n");
     return ESP_LOADER_SUCCESS;
 }
 
@@ -359,14 +337,12 @@ static esp_loader_error_t detect_flash_size(size_t *flash_size)
     uint32_t flash_id = 0;
 
     RETURN_ON_ERROR( spi_flash_command(SPI_FLASH_READ_ID, NULL, 0, &flash_id, 24) );
-    printf("test23\r\n");
     uint32_t size_id = flash_id >> 16;
 
     if (size_id < 0x12 || size_id > 0x18) {
 
         return ESP_LOADER_ERROR_UNSUPPORTED_CHIP;
     }
-    printf("test24\r\n");
     *flash_size = size_id_to_flash_size[size_id - 0x12];
 
     return ESP_LOADER_SUCCESS;
@@ -380,14 +356,11 @@ esp_loader_error_t esp_loader_flash_start(uint32_t offset, uint32_t image_size, 
     size_t flash_size = 0;
 
     if (detect_flash_size(&flash_size) == ESP_LOADER_SUCCESS) {
-        printf("test25 image_size = %d,flash_size = %d\r\n",image_size,flash_size);
         if (image_size > flash_size) {
             return ESP_LOADER_ERROR_IMAGE_SIZE;
         }
         loader_port_start_timer(DEFAULT_TIMEOUT);
-        printf("test26\r\n");
         RETURN_ON_ERROR( loader_spi_parameters(flash_size) );
-        printf("test27\r\n");
     } else {
         loader_port_debug_print("Flash size detection failed, falling back to default");
     }
