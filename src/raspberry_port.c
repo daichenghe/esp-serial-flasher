@@ -288,9 +288,11 @@ static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
 	{
 		error = -1;
 	}
-    printf("port_settings.BaudRate = %d\r\n",port_settings.BaudRate);
+    printf("1port_settings.BaudRate = %d\r\n",port_settings.BaudRate);
 	port_settings.BaudRate = baudrate;
-
+    port_settings.Parity = 0;
+    port_settings.StopBits = 0; 
+    port_settings.ByteSize = 8;
 	if (!SetCommState(serial, &port_settings))
 	{
 		error = -2;
@@ -299,7 +301,7 @@ static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
 	{
 		error = -1;
 	}
-    printf("port_settings.BaudRate = %d\r\n",port_settings.BaudRate);
+    printf("2port_settings.BaudRate = %d,error = %d\r\n",port_settings.BaudRate,error);
 	return error;
 }
 #endif
@@ -385,7 +387,11 @@ esp_loader_error_t loader_port_raspberry_init(const loader_raspberry_config_t *c
     s_gpio0_trigger_pin = config->gpio0_trigger_pin;
     printf("device is: %s\r\n",config->device);
     serial = serialOpen(config->device, config->baudrate);
+    // uart_close();
+    // serial = serialOpen(config->device, config->baudrate);
+    uart_flush(serial);
     esp_loader_error_t err = loader_port_change_baudrate(115200);
+
     if (err != ESP_LOADER_SUCCESS) {
         printf("Unable to change baud rate.\r\n");
     }
@@ -510,4 +516,16 @@ void loader_port_debug_print(const char *str)
 esp_loader_error_t loader_port_change_baudrate(uint32_t baudrate)
 {
     return change_baudrate(serial, baudrate);
+}
+
+uint32_t uart_flush(int file_desc)
+{
+	PurgeComm(file_desc, PURGE_RXCLEAR | PURGE_RXABORT);
+	PurgeComm(file_desc, PURGE_TXCLEAR | PURGE_TXABORT);
+    return 0;
+}
+
+void uart_close()
+{
+    CloseHandle(serial);
 }

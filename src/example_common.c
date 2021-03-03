@@ -100,6 +100,7 @@ esp_loader_error_t connect_to_target(uint32_t higrer_baudrate)
     esp_loader_error_t err = esp_loader_connect(&connect_config);
     if (err != ESP_LOADER_SUCCESS) {
         printf("Cannot connect to target. Error: %u\n", err);
+        uart_close();
         return err;
     }
     printf("Connected to target\n");
