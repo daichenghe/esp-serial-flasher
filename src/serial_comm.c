@@ -125,7 +125,6 @@ static esp_loader_error_t SLIP_send_pre(const uint8_t *data, uint32_t size)
     }
 
     if (to_write > 0) {
-#if 1
         uint8_t* buff_to_send;
         buff_to_send = (char *)malloc((to_write + 2) * sizeof(char));
         memset(buff_to_send,0,to_write + 2);
@@ -133,15 +132,6 @@ static esp_loader_error_t SLIP_send_pre(const uint8_t *data, uint32_t size)
         memcpy(&buff_to_send[1],&data[written],to_write);
         buff_to_send[to_write + 1] = 0xc0;
         RETURN_ON_ERROR( serial_write(buff_to_send, to_write + 2) ) ;
-        // for(int i = 0;i<to_write + 2 ;i++)
-        // {
-        //     printf("%x ",buff_to_send[i]);
-        // }
-        // printf("\r\n");
-#else
-        char test_buff[46] = {0xc0,0,8,36,0,0,0,0,0,7,7,18,32,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,0xc0};
-        RETURN_ON_ERROR( serial_write(test_buff, 46) ) ;
-#endif
     }
 
     return ESP_LOADER_SUCCESS;
@@ -173,21 +163,6 @@ static esp_loader_error_t SLIP_send(const uint8_t *data, uint32_t size)
     }
 
     if (to_write > 0) {
-
-        // uint8_t* buff_to_send;
-        // buff_to_send = (char *)malloc((to_write + 2) * sizeof(char));
-        // printf("to_write = %d,written = %d\r\n",to_write,written);
-        // memset(buff_to_send,0,to_write + 2);
-        // buff_to_send[0] = 0xc0;
-        // memcpy(&buff_to_send[1],&data[written],to_write);
-        // buff_to_send[to_write + 1] = 0xc0;
-
-        // for(int i = 0;i<to_write + 2 ;i++)
-        // {
-        //     printf("%x ",buff_to_send[i]);
-        // }
-        // printf("\r\n");
-        // RETURN_ON_ERROR( serial_write(buff_to_send, to_write + 2) ) ;
         RETURN_ON_ERROR( serial_write(&data[written], to_write) );
     }
 
@@ -287,7 +262,6 @@ static esp_loader_error_t check_response(command_t cmd, uint32_t *reg_value, voi
 {
     esp_loader_error_t err;
     common_response_t *response = (common_response_t *)resp;
-    // printf("check respose\r\n");
     do {
         err = SLIP_receive_packet(resp, resp_size);
         if (err != ESP_LOADER_SUCCESS) {

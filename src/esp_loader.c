@@ -169,25 +169,6 @@ static uint32_t timeout_per_mb(uint32_t size_bytes, uint32_t time_per_mb)
 
 static esp_loader_error_t detect_chip(target_chip_t *target)
 {
-
-#if 0
-    uint32_t reg_1, reg_2;
-    printf("test1-1\r\n");
-    RETURN_ON_ERROR( esp_loader_read_register(UART_DATE_REG_ADDR,  &reg_1) );
-    printf("test1-2\r\n");
-    RETURN_ON_ERROR( esp_loader_read_register(UART_DATE_REG2_ADDR, &reg_2) );
-    printf("test1-3\r\n");
-    for (int chip = 0; chip < ESP_MAX_CHIP; chip++) {
-        const date_registers_t *r = &s_date_regs[chip];
-        if (r->reg_1 == reg_1 && (r->reg_2 == 0 || r->reg_2 == reg_2)) {
-            *target = (target_chip_t)chip;
-            return ESP_LOADER_SUCCESS;
-        }
-    }
-
-    return ESP_LOADER_ERROR_INVALID_TARGET;
-    c0 0 a 4 0 0 0 0 0 78 0 0 60 c0
-#else
     uint32_t reg_1, reg_2;
     RETURN_ON_ERROR( esp_loader_read_register(UART_DATE_REG_ADDR,  &reg_1) );
     RETURN_ON_ERROR( esp_loader_read_register(UART_DATE_REG2_ADDR, &reg_2) );
@@ -200,7 +181,6 @@ static esp_loader_error_t detect_chip(target_chip_t *target)
     }
 
     return ESP_LOADER_ERROR_INVALID_TARGET;
-#endif
 }
 
 extern esp_loader_error_t serial_write(const uint8_t *buff, size_t size);

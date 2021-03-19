@@ -59,29 +59,7 @@ static void upload_file(loader_raspberry_config_t* config)
 {
     char *buffer = NULL;
     int size = 0;
-#if 0
-    FILE *image = fopen(config->boot_path, "rb");
-    if (image == NULL) {
-        printf("Error:Failed to open file %s\n", path);
-        return;
-    }
 
-    fseek(image, 0L, SEEK_END);
-    size_t size = ftell(image);
-    rewind(image);
-    fseek(image, 0, SEEK_SET);
-    printf("File %s opened. Size: %u bytes\n", path, size);
-
-    buffer = (char *)malloc(size);
-    if (buffer == NULL) {
-        printf("Error: Failed allocate memory\n");
-        goto cleanup;
-    }
-
-    // copy file content to buffer
-    //size_t bytes_read = fread(buffer, 1, size, image);
-    uint32_t bytes_read = fread(buffer, 1, size, image);
-#endif
     size = get_buffer(config->boot_path, &buffer);
     flash_binary(buffer, size, config->bootloader_address);
     free(buffer);
@@ -109,7 +87,7 @@ int main(int argc,int* argv[])
     {
         strcpy(com_set, TP_UART_FILENAME_PREFIX);
         strcpy(&com_set[strlen(TP_UART_FILENAME_PREFIX)],argv[1]);
-        printf("com = %s\r\n",com_set);
+        printf("uart = %s\r\n",com_set);
     }
     else
     {

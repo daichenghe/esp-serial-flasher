@@ -288,7 +288,6 @@ static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
 	{
 		error = -1;
 	}
-    printf("1port_settings.BaudRate = %d\r\n",port_settings.BaudRate);
 	port_settings.BaudRate = baudrate;
     port_settings.Parity = 0;
     port_settings.StopBits = 0; 
@@ -301,7 +300,6 @@ static esp_loader_error_t change_baudrate(int file_desc, int baudrate)
 	{
 		error = -1;
 	}
-    printf("2port_settings.BaudRate = %d,error = %d\r\n",port_settings.BaudRate,error);
 	return error;
 }
 #endif
@@ -359,12 +357,10 @@ static esp_loader_error_t read_char(uint8_t *c, uint32_t timeout)
 
 	ReadFile(serial, c, 1, (&read_bytes), NULL);
     if (read_bytes == 1) {
-        //printf("c = %x\r\n",*c);
         return ESP_LOADER_SUCCESS;
     } else if (read_bytes == 0) {
         return ESP_LOADER_ERROR_TIMEOUT;
     } else {
-        printf("fail\r\n");
         return ESP_LOADER_ERROR_FAIL;
     }
 #endif
@@ -427,12 +423,6 @@ esp_loader_error_t loader_port_serial_write(const uint8_t *data, uint16_t size, 
     }
 #else
     serial_debug_print(data, size, true);
-    // for(int i = 0;i<size ;i++)
-    // {
-    //     printf("%x ",data[i]);
-    // }
-    // printf("\r\n");
-    //int written = write(serial, data, size);
     int written = 0;
 	BOOL write_status = WriteFile(serial, data, size, (LPDWORD)(&written), NULL);
     if (written < 0) {
@@ -498,8 +488,6 @@ uint32_t loader_port_remaining_time(void)
 
 #ifdef WINDOWS_PLATFORM
     int64_t remaining = (s_time_end - clock()) ;
-    // printf("remaining = %d\r\n",remaining);
-    // printf("clock() = %d\r\n",clock());
     return (remaining > 0) ? (uint32_t)remaining : 0;
 #else
     int64_t remaining = (s_time_end - clock()) / 1000;
